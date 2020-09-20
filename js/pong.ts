@@ -1,45 +1,4 @@
-class Vec {
-  constructor(x=0, y=0){
-    this.x=x;
-    this.y=y;
-    this.len = Math.sqrt(this.x**2+ this.y**2);
-  }
-
-  get len(){
-    return Math.sqrt(this.x**2+ this.y**2);
-  }
-  set len(value){
-    const fact = value/this.len;
-    this.x *= fact;
-    this.y *= fact;
-  }
-}
-
-class Rect {
-  constructor(w=0, h=0){
-    this.pos = new Vec();
-    this.size = new Vec(w, h);
-    this.vel = new Vec();
-  }
-  get left(){
-    return this.pos.x
-  }
-  get right(){
-    return this.pos.x + this.size.x
-  }
-  get top(){
-    return this.pos.y
-  }
-  get bottom(){
-    return this.pos.y + this.size.y
-  }
-  get height(){
-    return this.bottom-this.top
-  }
-  get middle(){
-    return (this.top+this.bottom)/2
-  }
-}
+import { Rect } from "./Rect";
 
 class Ball extends Rect {
   constructor(){
@@ -48,6 +7,7 @@ class Ball extends Rect {
 }
 
 class Player extends Rect {
+  score: number;
   constructor() {
     super(20, 100);
     this.score = 0;
@@ -55,6 +15,21 @@ class Player extends Rect {
 }
 
 class Pong{
+  private _canvas: any;
+  private _context: any;
+  private ball: Ball;
+  players: Player[];
+  private CHAR_PIXEL_SIZE = 10;
+  private CHARS: HTMLCanvasElement[];
+  private lastTime: any;
+
+  private callback(milliseconds: number) {
+    if(this.lastTime){
+      this.update((milliseconds-this.lastTime)/1000);
+    }
+    this.lastTime = milliseconds;
+    requestAnimationFrame((milliseconds)=> this.callback(milliseconds));
+  }
   constructor(canvas) {
     console.log(canvas)
     this._canvas = canvas;
@@ -76,28 +51,18 @@ class Pong{
 
     console.log(this.ball);
 
-    let lastTime;
-    const callback = (milliseconds) => {
-      if(lastTime){
-        this.update((milliseconds-lastTime)/1000);
-      }
-      lastTime = milliseconds;
-      requestAnimationFrame(callback);
-    }
-    callback();
-
-    this.CHAR_PIXEL_SIZE = 10;
+    window.requestAnimationFrame((milliseconds) => this.callback(milliseconds));
     this.CHARS =
       ['111101101101111',
-      '010010010010010',
-      '111001111100111',
-      '111001111001111',
-      '101101111001001',
-      '111100111001111',
-      '111100111101111',
-      '111001001001001',
-      '111101111101111',
-      '111101111001111'].map(str => {
+        '010010010010010',
+        '111001111100111',
+        '111001111001111',
+        '101101111001001',
+        '111100111001111',
+        '111100111101111',
+        '111001001001001',
+        '111101111101111',
+        '111101111001111'].map(str => {
         const canvas = document.createElement('canvas');
         canvas.height = this.CHAR_PIXEL_SIZE * 5;
         canvas.width = this.CHAR_PIXEL_SIZE * 3;
@@ -109,22 +74,22 @@ class Pong{
           }
         });
         return canvas;
-    });
+      });
     this.reset();
   }
   drawScore(){
-      const align = this._canvas.width/3;
-      const CHAR_W = this.CHAR_PIXEL_SIZE * 4;
-      this.players.forEach((player, index) => {
-        const chars = player.score.toString().split('');
-        const offset = align *
-          (index+1) -
-          (CHAR_W*chars.length/2) +
-          (this.CHAR_PIXEL_SIZE/2);
-        chars.forEach((char, pos) => {
-          this._context.drawImage(this.CHARS[char|0],offset + pos * CHAR_W, 20);
-        })
+    const align = this._canvas.width/3;
+    const CHAR_W = this.CHAR_PIXEL_SIZE * 4;
+    this.players.forEach((player, index) => {
+      const chars = player.score.toString().split('');
+      const offset = align *
+        (index+1) -
+        (CHAR_W*chars.length/2) +
+        (this.CHAR_PIXEL_SIZE/2);
+      chars.forEach((char, pos) => {
+        this._context.drawImage(this.CHARS[char],offset + pos * CHAR_W, 20);
       })
+    })
   }
   drawRect(rect) {
     this._context.fillStyle = 'red';
@@ -194,17 +159,5 @@ class Pong{
   }
 }
 
-const canvas = document.getElementById('pong');
-const pong = new Pong(canvas);
 
-
-canvas.addEventListener('mousemove', event =>{
-  pong.players[0].pos.y = event.offsetY;
-})
-canvas.addEventListener('touchmove', event =>{
-  pong.players[0].pos.y = event.touches[0].clientY;
-})
-canvas.addEventListener('click', () =>{
-  pong.start();
-})
-
+export { Pong };
