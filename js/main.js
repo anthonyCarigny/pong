@@ -56,25 +56,15 @@ class Player extends Rect {
 
 class Pong{
   constructor(canvas) {
-    console.log(canvas)
+    // console.log(canvas)
     this._canvas = canvas;
     this._context = canvas.getContext('2d');
 
     this.ball = new Ball;
 
     this.players = [new Player(), new Player()]
-    this.players[0].pos.x = 40 - this.players[0].size.x;
-    this.players[1].pos.x = this._canvas.width - 40;
-    const canvas_center = this._canvas.height / 2 ;
-    this.players.forEach((player, index) => {
-      console.log(canvas_center)
-      console.log(player.size.y)
-      player.pos.y = (canvas_center - player.size.y/2);
-      console.log("player%s: pos=%s, vel=%s)",index,player.pos.y, player.vel.y)
-      console.log(player)
-    })
 
-    console.log(this.ball);
+    // console.log(this.ball);
 
     let lastTime;
     const callback = (milliseconds) => {
@@ -86,45 +76,12 @@ class Pong{
     }
     callback();
 
-    this.CHAR_PIXEL_SIZE = 10;
-    this.CHARS =
-      ['111101101101111',
-      '010010010010010',
-      '111001111100111',
-      '111001111001111',
-      '101101111001001',
-      '111100111001111',
-      '111100111101111',
-      '111001001001001',
-      '111101111101111',
-      '111101111001111'].map(str => {
-        const canvas = document.createElement('canvas');
-        canvas.height = this.CHAR_PIXEL_SIZE * 5;
-        canvas.width = this.CHAR_PIXEL_SIZE * 3;
-        const context = canvas.getContext('2d');
-        context.fillStyle = '#fff';
-        str.split('').forEach((fill,i)=>{
-          if(fill === '1') {
-            context.fillRect( (i % 3) * this.CHAR_PIXEL_SIZE, (i/3 | 0) * this.CHAR_PIXEL_SIZE, this.CHAR_PIXEL_SIZE, this.CHAR_PIXEL_SIZE)
-          }
-        });
-        return canvas;
-    });
     this.reset();
   }
   drawScore(){
-      const align = this._canvas.width/3;
-      const CHAR_W = this.CHAR_PIXEL_SIZE * 4;
-      this.players.forEach((player, index) => {
-        const chars = player.score.toString().split('');
-        const offset = align *
-          (index+1) -
-          (CHAR_W*chars.length/2) +
-          (this.CHAR_PIXEL_SIZE/2);
-        chars.forEach((char, pos) => {
-          this._context.drawImage(this.CHARS[char|0],offset + pos * CHAR_W, 20);
-        })
-      })
+    this._context.font = "30px arcade_interlacedregular";
+    this._context.fillText(this.players[0].score, this._canvas.width/4, 50);
+    this._context.fillText(this.players[1].score, (this._canvas.width/4)*3, 50);
   }
   drawRect(rect) {
     this._context.fillStyle = 'red';
@@ -132,15 +89,19 @@ class Pong{
 
   }
 
-  moveComputer(){
-    this.players[1].vel.y = (this.ball.pos.y > this.players[1].middle ? 450 : -450);
+  moveComputer(delta_time){
+    if(this.ball.pos.y >= (this.players[1].bottom - this.current_accuracy) && this.players[1].bottom <= this._canvas.height ){
+      this.players[1].pos.y += this.ball.vel.y*delta_time;
+    }
+    if(this.ball.pos.y <= (this.players[1].top + this.current_accuracy) && this.players[1].top >= 0 ){
+      this.players[1].pos.y += this.ball.vel.y*delta_time;
+    }
   }
   bounceBallIfCollidesWithPlayer(player){
     if(player.left <= this.ball.right && player.right >= this.ball.left && player.top <= this.ball.bottom && player.bottom >= this.ball.top ){
       this.ball.vel.x = -this.ball.vel.x;
       this.ball.vel.len *= 1.05;
       this.players[1].vel.y *= 3;
-      console.log(this.ball.vel)
     }
   }
 
@@ -160,12 +121,17 @@ class Pong{
     this.ball.vel.x = 0;
     this.ball.vel.y = 0;
 
-    this.players[1].vel.y = 0;
+    this.players[0].pos.x = 40 - this.players[0].size.x;
+    this.players[1].pos.x = this._canvas.width - 40;
+    const canvas_center = this._canvas.height / 2 ;
+    this.players.forEach((player) => {
+      player.pos.y = (canvas_center - player.size.y/2);
+    })
   }
 
   start() {
     if(this.ball.vel.x === 0 && this.ball.vel.y === 0){
-
+      this.current_accuracy = 5*this.players[0].score;
       this.ball.vel.x = 300 * (Math.random() > 0.5 ? 1 : -1);
       this.ball.vel.y = 300 * (Math.random() > 0.5 ? 1 : -1);
     }
@@ -175,7 +141,6 @@ class Pong{
   update(delta_time){
     this.ball.pos.x+=this.ball.vel.x * delta_time;
     this.ball.pos.y+=this.ball.vel.y * delta_time;
-    this.players[1].pos.y+=this.players[1].vel.y * delta_time;
 
     if(this.ball.left <= 0 || this.ball.right >= this._canvas.width){
       const playerId = this.ball.vel.x < 0 ? 1 : 0; //if the ball was going left when hitting the wall, player 1 won otherwise, player 0 won
@@ -186,7 +151,7 @@ class Pong{
       this.ball.vel.y = -this.ball.vel.y;
     }
 
-    this.moveComputer();
+    this.moveComputer(delta_time);
     this.players.forEach(player=>{
       this.bounceBallIfCollidesWithPlayer(player);
     })
