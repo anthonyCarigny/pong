@@ -55,6 +55,7 @@ class Player extends Rect {
 }
 
 class Pong{
+  MAX_POINTS = 5;
   constructor(canvas) {
     // console.log(canvas)
     this._canvas = canvas;
@@ -131,7 +132,8 @@ class Pong{
 
   start() {
     if(this.ball.vel.x === 0 && this.ball.vel.y === 0){
-      this.current_accuracy = 5*this.players[0].score;
+      const computer_accuracy = (this.players[0].score - this.players[1].score);
+      this.current_accuracy = 5*(computer_accuracy > 0 ? computer_accuracy : 1);
       this.ball.vel.x = 300 * (Math.random() > 0.5 ? 1 : -1);
       this.ball.vel.y = 300 * (Math.random() > 0.5 ? 1 : -1);
     }
@@ -145,6 +147,9 @@ class Pong{
     if(this.ball.left <= 0 || this.ball.right >= this._canvas.width){
       const playerId = this.ball.vel.x < 0 ? 1 : 0; //if the ball was going left when hitting the wall, player 1 won otherwise, player 0 won
       this.players[playerId].score++;
+      if(this.players.some(player => player.score >= this.MAX_POINTS)){
+        this.endGame();
+      }
       this.reset();
     }
     if(this.ball.top <= 0 || this.ball.bottom >= this._canvas.height){
@@ -157,6 +162,15 @@ class Pong{
     })
     this.draw();
   }
+
+  endGame() {
+    if(this.players[0].score >= this.MAX_POINTS){
+      alert("You win");
+    } else {
+      alert("You lose");
+    }
+    this.players.forEach(player=>player.score = 0);
+  }
 }
 
 const canvas = document.getElementById('pong');
@@ -164,10 +178,10 @@ const pong = new Pong(canvas);
 
 
 canvas.addEventListener('mousemove', event =>{
-  pong.players[0].pos.y = event.offsetY;
+  pong.players[0].pos.y = event.offsetY - pong.players[0].size.y/2;
 })
 canvas.addEventListener('touchmove', event =>{
-  pong.players[0].pos.y = event.touches[0].clientY;
+  pong.players[0].pos.y = event.touches[0].clientY - pong.players[0].size.y/2;
 })
 canvas.addEventListener('click', () =>{
   pong.start();
